@@ -57,3 +57,6 @@ data/attack/out/report.dev.json
 devpost/raw/
 devpost/slides.html
 !.env.example
+
+# Local tool config
+.claude/
