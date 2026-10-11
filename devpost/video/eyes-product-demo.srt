@@ -1,0 +1,27 @@
+1
+00:00:00,300 --> 00:00:04,600
+So we built Eyes. Cameras that don't just watch. They act.
+
+2
+00:00:05,300 --> 00:00:14,600
+AttackNet, our own model, reads body language and flags an attack as it happens. Ninety-two percent accurate on footage it's never seen.
+
+3
+00:00:15,300 --> 00:00:24,600
+The alert spreads across our own mesh, a hundred and thirty nodes from police to MARTA buses, in seconds, even when the internet is down.
+
+4
+00:00:25,300 --> 00:00:36,600
+Then AI agents take over, right in iMessage. One live card, updated in place. Dispatch pages the nearest units, and when an officer replies 'on my way', it turns green.
+
+5
+00:00:37,300 --> 00:00:45,600
+Everyone nearby gets a warning and a safe spot. Need help? EMS is paged, and Eyes guides you until they arrive.
+
+6
+00:00:46,300 --> 00:00:55,600
+Under the hood: a 1.9-million-parameter transformer trained on an NVIDIA GPU, an offline-first mesh, and Gemini agents on Photon. Live today.
+
+7
+00:00:56,300 --> 00:00:59,600
+Eyes. Cameras that watch. Eyes that act.

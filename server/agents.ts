@@ -314,7 +314,17 @@ async function setupIMessage() {
   void listen(app);
 }
 
+// Re-subscribes if the stream ever ends (Wi-Fi blips at a venue happen), so
+// replies like "on my way" keep arriving.
 async function listen(spectrum: SpectrumApp) {
+  for (;;) {
+    await listenOnce(spectrum);
+    log("Spectrum stream ended: reconnecting in 2 s");
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+}
+
+async function listenOnce(spectrum: SpectrumApp) {
   try {
     for await (const [space, message] of spectrum.messages) {
       if (message.sender?.kind === "agent") continue;

@@ -1,3 +1,4 @@
+import { attackNetUrl, drawAttackBoxes as drawLiveAttackBoxes, LiveAttackNet, type AttackResult } from "./attacknet";
 import { logoSvg } from "./logo";
 import "./style.css";
 import { loadPoseLandmarker, renderFrame, flattenLandmarks, isReady, type PoseVectorRecord } from "./pose";
@@ -186,8 +187,10 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
       <div class="stat-grid">
         <div class="stat"><div class="stat-label">Status</div><div id="liveStatus" class="stat-value">idle</div></div>
         <div class="stat"><div class="stat-label">People now</div><div id="livePeople" class="stat-value">0</div></div>
-        <div class="stat"><div class="stat-label">Punches detected</div><div id="livePunches" class="stat-value">0</div></div>
+        <div class="stat"><div class="stat-label">Alerts raised</div><div id="livePunches" class="stat-value">0</div></div>
         <div class="stat"><div class="stat-label">Fastest hand</div><div id="liveSpeed" class="stat-value">—</div></div>
+        <div class="stat stat-wide"><div class="stat-label">AttackNet · NVIDIA T4</div><div id="liveAttack" class="stat-value">off</div></div>
+        <div class="stat stat-wide"><div class="stat-label">Mesh</div><div id="liveMesh" class="stat-value">connecting…</div></div>
       </div>
     </div>
 
@@ -736,6 +739,39 @@ let liveActive = false;
 let liveRafId: number | null = null;
 let mediaStream: MediaStream | null = null;
 const liveDetector = new StrikeDetector();
+
+// AttackNet on the GPU is the main reasoner: boxes red above 30%; the alert
+// fires when the frame score stays above 50% for two frames, then re-arms
+// once the scene calms below 30%. StrikeDetector (in the browser) only
+// raises alerts while AttackNet is unreachable, so the demo never goes dark.
+const ATTACK_RED = 0.3;
+const ATTACK_ALERT = 0.5;
+const liveAttack = document.querySelector<HTMLDivElement>("#liveAttack")!;
+let attackNet: LiveAttackNet | null = null;
+// Whether alerts can leave this laptop: the hub link (the tunnel address
+// changes on every restart, so a stale link is the usual culprit).
+const liveMesh = document.querySelector<HTMLDivElement>("#liveMesh")!;
+void sessionP.then((s) => {
+  setInterval(() => {
+    const ok = s.hub.connected;
+    liveMesh.textContent = ok ? "connected · alerts go out" : "offline · alerts stay on this laptop";
+    liveMesh.classList.toggle("hot", !ok);
+    liveMesh.classList.toggle("ok", ok);
+  }, 1000);
+});
+let attackHigh = 0;
+let attackArmed = true;
+function onAttackResult(r: AttackResult) {
+  liveAttack.textContent = `${Math.round(r.p * 100)}% · ${r.rtt} ms`;
+  liveAttack.title = `GPU ${r.ms} ms · network + GPU ${r.rtt} ms · encode ${r.encodeMs} ms`;
+  liveAttack.classList.toggle("hot", r.p >= ATTACK_RED);
+  attackHigh = r.p >= ATTACK_ALERT ? attackHigh + 1 : 0;
+  if (r.p < ATTACK_RED) attackArmed = true;
+  if (attackArmed && attackHigh >= 2) {
+    attackArmed = false;
+    triggerThreat(`AttackNet (NVIDIA T4): attack detected, ${Math.round(r.p * 100)}% confidence`);
+  }
+}
 let punchCount = 0;
 let lastAlertAt = 0;
 // The detector already spaces strikes 1.5 s apart per pair; this only keeps
@@ -773,7 +809,7 @@ function triggerThreat(reason: string, strike?: Strike) {
     threatBanner.classList.add("hidden");
     threatBanner.classList.remove("threat-flash");
   }, 1200);
-  void escalate(reason, strike ? captureEvidence(strike, reason) : null, strike);
+  void escalate(reason, captureEvidence(strike, reason), strike);
 }
 
 // The frame the strike was detected on, as evidence: camera image + the pose
@@ -783,7 +819,7 @@ function triggerThreat(reason: string, strike?: Strike) {
 const EVIDENCE_WIDTH = 560;
 const EVIDENCE_MAX_CHARS = 44_000;
 
-function captureEvidence(s: Strike, reason: string): string | null {
+function captureEvidence(s: Strike | undefined, reason: string): string | null {
   const W = liveVideo.videoWidth;
   const H = liveVideo.videoHeight;
   if (!W || !H) return null;
@@ -800,13 +836,15 @@ function captureEvidence(s: Strike, reason: string): string | null {
   g.drawImage(liveVideo, 0, 0, w, h);
   g.drawImage(liveOverlay, 0, 0, w, h);
   g.restore();
-  const x = w - s.at.x * k;
-  const y = s.at.y * k;
-  g.strokeStyle = "#ff2b2b";
-  g.lineWidth = 4;
-  g.beginPath();
-  g.arc(x, y, 28, 0, Math.PI * 2);
-  g.stroke();
+  if (s) {
+    const x = w - s.at.x * k;
+    const y = s.at.y * k;
+    g.strokeStyle = "#ff2b2b";
+    g.lineWidth = 4;
+    g.beginPath();
+    g.arc(x, y, 28, 0, Math.PI * 2);
+    g.stroke();
+  }
   g.fillStyle = "rgba(0, 0, 0, 0.65)";
   g.fillRect(0, h - 28, w, 28);
   g.fillStyle = "#fff";
@@ -826,7 +864,9 @@ function captureEvidence(s: Strike, reason: string): string | null {
 // to the police, none are dropped.
 const ESCALATE_TO_MAP_MS = 1800;
 // Punches this close together are one fight (one incident, many frames).
-const SAME_FIGHT_MS = 2 * 60_000;
+// A new incident if the last punch was longer ago than this, or if the open
+// incident was resolved: a forgotten incident never swallows new punches.
+const SAME_FIGHT_MS = 45_000;
 let fight: { id: string; lastAt: number; punches: number } | null = null;
 
 // What a responder reads; the detector's own description stays as evidence.
@@ -860,11 +900,14 @@ function liveLoop() {
       livePeople.textContent = String(result.people.length);
       const strikes = liveDetector.update(result.landmarksByPerson, liveOverlay.width, liveOverlay.height, result.tMs);
       liveDetector.draw(liveOverlay.getContext("2d")!, result.tMs, true);
+      const a = attackNet?.latest;
+      if (a && performance.now() - a.at < 700) drawLiveAttackBoxes(liveOverlay.getContext("2d")!, a, liveOverlay.width, liveOverlay.height, ATTACK_RED);
       const fastest = Math.max(0, ...liveDetector.hands.map((h) => h.speed));
       liveSpeed.textContent = `${fastest.toFixed(1)} torso/s`;
       for (const s of strikes) {
         if (recording) sessionLiveStrikes.push({ t: (performance.now() - recordStartedAt) / 1000, desc: describeStrike(s) });
-        triggerThreat(describeStrike(s), s);
+        // AttackNet decides while it's connected; StrikeDetector is the fallback.
+        if (attackNet?.status !== "live") triggerThreat(describeStrike(s), s);
       }
     }
   }
@@ -873,6 +916,9 @@ function liveLoop() {
 
 function stopLive() {
   liveActive = false;
+  attackNet?.stop();
+  attackNet = null;
+  liveAttack.textContent = "off";
   if (liveRafId !== null) cancelAnimationFrame(liveRafId);
   liveRafId = null;
   if (mediaStream) {
@@ -913,6 +959,15 @@ liveStartBtn.addEventListener("click", async () => {
   liveStopBtn.disabled = false;
   recordBtn.disabled = false;
   liveLog("Camera live. A fast hand entering another person's body hitbox triggers the alert.");
+  const anUrl = attackNetUrl();
+  if (anUrl) {
+    attackNet = new LiveAttackNet(anUrl, liveVideo, onAttackResult);
+    attackNet.start();
+    attackHigh = 0;
+    attackArmed = true;
+    liveAttack.textContent = "connecting…";
+    liveLog("AttackNet: streaming to the NVIDIA T4 at 10 fps. It decides the alert; StrikeDetector stands by as a fallback.");
+  }
   liveLoop();
 });
 

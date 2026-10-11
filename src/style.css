@@ -2699,3 +2699,17 @@ button:disabled {
     animation: none;
   }
 }
+
+/* Live AttackNet status in the camera panel. */
+.stat-wide {
+  grid-column: 1 / -1;
+}
+
+#liveAttack.hot,
+#liveMesh.hot {
+  color: #f87171;
+}
+
+#liveMesh.ok {
+  color: #4ade80;
+}

@@ -60,3 +60,7 @@ devpost/slides.html
 
 # Local tool config
 .claude/
+
+# Rendered video (big binaries)
+devpost/video/*.mp4
+devpost/video/*.wav
