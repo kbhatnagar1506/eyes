@@ -17,6 +17,10 @@ dist-ssr
 densepose-output/
 densepose-output-ucfcrime/
 densepose-tracked/
+densepose-multi/
+
+# Recorded training sessions — real people's faces, never commit
+sessions/
 
 # Editor directories and files
 .vscode/*
@@ -28,3 +32,28 @@ densepose-tracked/
 *.njsproj
 *.sln
 *.sw?
+
+# Raw source downloads (MARTA GTFS zip, Overpass responses): rebuilt by scripts/
+data/raw/
+.vercel
+.env*
+
+# ---- never public -------------------------------------------------------------
+# Signed links into the private media bucket (regenerate: npm run media:sign)
+public/media.json
+# Demo footage lives in the private bucket. UCF-Crime clips are research-licensed:
+# never redistribute them here.
+public/demo-clips/
+# Map datasets are rebuilt from open data by scripts/build_*.py
+public/data/
+# Third-party model weights download at run time; our own AttackNet ships.
+*.pt
+!data/attack/out/attacknet.pt
+# Pose tracks, the RLVS working set and local dev copies
+data/attack/*_tracks.json
+data/attack/rlvs/
+data/attack/out/report.dev.json
+# Raw screenshots and the slide source (the gallery JPGs are committed)
+devpost/raw/
+devpost/slides.html
+!.env.example

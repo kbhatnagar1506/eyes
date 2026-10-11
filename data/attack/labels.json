@@ -1,0 +1,15 @@
+{
+  "_doc": "Attack intervals in seconds, hand-labeled from timestamped contact sheets (1 s CCTV, 0.5 s stock). 'ignore' = ambiguous, left out of scoring. split: train = real-world footage; test_only = sparring/stock, never trained on.",
+  "Fighting042_x264":       {"split": "train", "attack": [[10, 29.5], [33, 39.5]]},
+  "Fighting049_x264":       {"split": "train", "attack": [[2.5, 8.5], [16, 32.5]]},
+  "Assault049_x264":        {"split": "train", "attack": [[12, 23.5], [27.5, 31]]},
+  "Assault050_x264":        {"split": "train", "attack": [[2.5, 18.5]]},
+  "Assault051_x264":        {"split": "train", "attack": [[8.5, 15.5]], "ignore": [[0, 3], [16, 18]]},
+  "Normal_929_x264":        {"split": "train", "attack": []},
+  "busstop_calm_36467681":  {"split": "train", "attack": []},
+  "gf-punch-1":             {"split": "train", "attack": [[1.3, 3.0], [3.5, 5.6], [6.6, 7.8], [9.4, 11.5], [11.7, 12.6]], "ignore": [[12.8, 14.0]]},
+  "sparring_6296158":       {"split": "test_only", "attack": [[8.3, 14.5]], "ignore": [[2.5, 8.3]]},
+  "sparring2_6296587":      {"split": "test_only", "attack": [[2.2, 3.6], [5.6, 8.6]], "ignore": [[8.6, 12.1]]},
+  "boxing_6296696":         {"split": "test_only", "attack": [[3.0, 6.0], [7.5, 8.5]]},
+  "woman_sparring_6296385": {"split": "test_only", "attack": [[0, 18.7]]}
+}

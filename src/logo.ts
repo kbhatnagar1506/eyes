@@ -1,0 +1,47 @@
+// The Eyes mascot: a white dome camera with one big lens for an eye.
+// Vector, so it stays crisp from a 16 px favicon to the hero.
+
+let uid = 0;
+
+export function logoSvg(size = 32, cls = "") {
+  // Unique gradient ids: several logos can share one page.
+  const k = `eyes${++uid}`;
+  return `<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Eyes">
+  <defs>
+    <radialGradient id="${k}b" cx="0.36" cy="0.32" r="0.78">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.55" stop-color="#eceef2"/>
+      <stop offset="1" stop-color="#b9bfc9"/>
+    </radialGradient>
+    <linearGradient id="${k}h" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d3d7de"/>
+    </linearGradient>
+    <radialGradient id="${k}l" cx="0.42" cy="0.38" r="0.7">
+      <stop offset="0" stop-color="#2b3445"/>
+      <stop offset="0.6" stop-color="#121722"/>
+      <stop offset="1" stop-color="#05070b"/>
+    </radialGradient>
+    <linearGradient id="${k}r" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3a4252"/>
+      <stop offset="1" stop-color="#0b0e14"/>
+    </linearGradient>
+  </defs>
+  <!-- body -->
+  <circle cx="50" cy="57" r="38" fill="url(#${k}b)"/>
+  <!-- shadow under the hood -->
+  <path d="M10 52 C16 38 34 31 54 31 C72 31 86 36 92 44 C90 47 88 49 86 50 C78 43 64 40 50 41 C32 42 19 48 13 57 Z" fill="#9aa1ad" opacity="0.55"/>
+  <!-- hood -->
+  <path d="M6 50 C5 24 29 8 55 8 C79 8 97 22 95 41 C88 33 72 28 53 29 C33 30 15 38 6 50 Z" fill="url(#${k}h)"/>
+  <path d="M6 50 C15 38 33 30 53 29 C72 28 88 33 95 41" fill="none" stroke="#c4c9d1" stroke-width="1.2"/>
+  <!-- lens -->
+  <g class="logo-eye">
+  <circle cx="56" cy="61" r="25" fill="url(#${k}r)"/>
+  <circle cx="56" cy="61" r="20.5" fill="url(#${k}l)"/>
+  <path d="M41 55 C44 47 51 43 59 43" fill="none" stroke="#5b7fa8" stroke-opacity="0.45" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- glint and mouth -->
+  <ellipse cx="66.5" cy="51.5" rx="4.6" ry="5.4" fill="#ffffff"/>
+  <path d="M49.5 68.5 Q55.5 62 61.5 68.5" fill="none" stroke="#ffffff" stroke-width="3.4" stroke-linecap="round"/>
+  </g>
+</svg>`;
+}

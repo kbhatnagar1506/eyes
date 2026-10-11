@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "types": ["bun"], "lib": ["ES2023", "DOM"] },
+  "include": ["./*.ts", "../src/mesh"]
+}

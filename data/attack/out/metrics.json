@@ -1,0 +1,317 @@
+{
+ "model": "AttackNet v2 (temporal transformer + people transformer, multiple-instance learning), pretrained on RLVS",
+ "weights": 1899209,
+ "features": 84,
+ "window_s": 2.0,
+ "shown": "A",
+ "threshold": 0.05,
+ "rlvs": {
+  "clips": 2000,
+  "train": 1400,
+  "val": 200,
+  "test": 400,
+  "stage_A_test": {
+   "clip_threshold": 0.5,
+   "frame_threshold": 0.05,
+   "clip_accuracy": 0.915,
+   "clip_auc": 0.975,
+   "frames": {
+    "f1": 0.882,
+    "precision": 0.894,
+    "recall": 0.871,
+    "accuracy": 0.884,
+    "auc": 0.942,
+    "frames": 19780
+   },
+   "clips": 400
+  },
+  "stage_B_test": {
+   "clip_threshold": 0.925,
+   "frame_threshold": 0.15,
+   "clip_accuracy": 0.795,
+   "clip_auc": 0.886,
+   "frames": {
+    "f1": 0.776,
+    "precision": 0.711,
+    "recall": 0.854,
+    "accuracy": 0.755,
+    "auc": 0.826,
+    "frames": 19780
+   },
+   "clips": 400
+  }
+ },
+ "stage_A": {
+  "ours": {
+   "threshold": 0.05,
+   "pooled": {
+    "f1": 0.628,
+    "precision": 0.537,
+    "recall": 0.756,
+    "accuracy": 0.671,
+    "auc": 0.725,
+    "frames": 2609
+   },
+   "per_clip": {
+    "Fighting042_x264": {
+     "f1": 0.619,
+     "precision": 0.522,
+     "recall": 0.76,
+     "accuracy": 0.672,
+     "auc": 0.778,
+     "frames": 746
+    },
+    "Fighting049_x264": {
+     "f1": 0.619,
+     "precision": 0.478,
+     "recall": 0.877,
+     "accuracy": 0.526,
+     "auc": 0.64,
+     "frames": 517
+    },
+    "Assault049_x264": {
+     "f1": 0.56,
+     "precision": 0.495,
+     "recall": 0.645,
+     "accuracy": 0.652,
+     "auc": 0.633,
+     "frames": 442
+    },
+    "Assault050_x264": {
+     "f1": 0.834,
+     "precision": 0.856,
+     "recall": 0.814,
+     "accuracy": 0.75,
+     "auc": 0.64,
+     "frames": 208
+    },
+    "Assault051_x264": {
+     "f1": 0.693,
+     "precision": 0.534,
+     "recall": 0.986,
+     "accuracy": 0.584,
+     "auc": 0.602,
+     "frames": 149
+    },
+    "Normal_929_x264": {
+     "f1": 0.0,
+     "precision": 0.0,
+     "recall": 0.0,
+     "accuracy": 1.0,
+     "auc": null,
+     "frames": 308
+    },
+    "busstop_calm_36467681": {
+     "f1": 0.0,
+     "precision": 0.0,
+     "recall": 0.0,
+     "accuracy": 0.631,
+     "auc": null,
+     "frames": 111
+    },
+    "gf-punch-1": {
+     "f1": 0.478,
+     "precision": 0.964,
+     "recall": 0.318,
+     "accuracy": 0.539,
+     "auc": 0.67,
+     "frames": 128
+    }
+   }
+  },
+  "sparring": {
+   "threshold": 0.05,
+   "pooled": {
+    "f1": 0.614,
+    "precision": 0.708,
+    "recall": 0.542,
+    "accuracy": 0.529,
+    "auc": 0.508,
+    "frames": 486
+   },
+   "per_clip": {
+    "sparring_6296158": {
+     "f1": 0.77,
+     "precision": 0.626,
+     "recall": 1.0,
+     "accuracy": 0.626,
+     "auc": 0.186,
+     "frames": 99
+    },
+    "sparring2_6296587": {
+     "f1": 0.525,
+     "precision": 0.6,
+     "recall": 0.467,
+     "accuracy": 0.558,
+     "auc": 0.623,
+     "frames": 86
+    },
+    "boxing_6296696": {
+     "f1": 0.03,
+     "precision": 0.04,
+     "recall": 0.024,
+     "accuracy": 0.43,
+     "auc": 0.351,
+     "frames": 114
+    },
+    "woman_sparring_6296385": {
+     "f1": 0.688,
+     "precision": 1.0,
+     "recall": 0.524,
+     "accuracy": 0.524,
+     "auc": null,
+     "frames": 187
+    }
+   }
+  }
+ },
+ "stage_B": {
+  "ours": {
+   "threshold": 0.075,
+   "pooled": {
+    "f1": 0.602,
+    "precision": 0.477,
+    "recall": 0.814,
+    "accuracy": 0.604,
+    "auc": 0.665,
+    "frames": 2609
+   },
+   "per_clip": {
+    "Fighting042_x264": {
+     "f1": 0.592,
+     "precision": 0.426,
+     "recall": 0.969,
+     "accuracy": 0.531,
+     "auc": 0.624,
+     "frames": 746
+    },
+    "Fighting049_x264": {
+     "f1": 0.617,
+     "precision": 0.473,
+     "recall": 0.885,
+     "accuracy": 0.516,
+     "auc": 0.703,
+     "frames": 517
+    },
+    "Assault049_x264": {
+     "f1": 0.573,
+     "precision": 0.433,
+     "recall": 0.849,
+     "accuracy": 0.566,
+     "auc": 0.652,
+     "frames": 442
+    },
+    "Assault050_x264": {
+     "f1": 0.786,
+     "precision": 0.903,
+     "recall": 0.696,
+     "accuracy": 0.707,
+     "auc": 0.826,
+     "frames": 208
+    },
+    "Assault051_x264": {
+     "f1": 0.624,
+     "precision": 0.57,
+     "recall": 0.69,
+     "accuracy": 0.604,
+     "auc": 0.591,
+     "frames": 149
+    },
+    "Normal_929_x264": {
+     "f1": 0.0,
+     "precision": 0.0,
+     "recall": 0.0,
+     "accuracy": 0.916,
+     "auc": null,
+     "frames": 308
+    },
+    "busstop_calm_36467681": {
+     "f1": 0.0,
+     "precision": 0.0,
+     "recall": 0.0,
+     "accuracy": 0.703,
+     "auc": null,
+     "frames": 111
+    },
+    "gf-punch-1": {
+     "f1": 0.534,
+     "precision": 0.761,
+     "recall": 0.412,
+     "accuracy": 0.523,
+     "auc": 0.481,
+     "frames": 128
+    }
+   }
+  },
+  "sparring": {
+   "threshold": 0.075,
+   "pooled": {
+    "f1": 0.723,
+    "precision": 0.662,
+    "recall": 0.798,
+    "accuracy": 0.578,
+    "auc": 0.324,
+    "frames": 486
+   },
+   "per_clip": {
+    "sparring_6296158": {
+     "f1": 0.77,
+     "precision": 0.626,
+     "recall": 1.0,
+     "accuracy": 0.626,
+     "auc": 0.333,
+     "frames": 99
+    },
+    "sparring2_6296587": {
+     "f1": 0.744,
+     "precision": 0.592,
+     "recall": 1.0,
+     "accuracy": 0.64,
+     "auc": 0.783,
+     "frames": 86
+    },
+    "boxing_6296696": {
+     "f1": 0.51,
+     "precision": 0.355,
+     "recall": 0.905,
+     "accuracy": 0.36,
+     "auc": 0.466,
+     "frames": 114
+    },
+    "woman_sparring_6296385": {
+     "f1": 0.794,
+     "precision": 1.0,
+     "recall": 0.658,
+     "accuracy": 0.658,
+     "auc": null,
+     "frames": 187
+    }
+   }
+  }
+ },
+ "v1_ours_pooled": {
+  "f1": 0.563,
+  "precision": 0.462,
+  "recall": 0.722,
+  "accuracy": 0.589,
+  "auc": 0.639,
+  "frames": 2609
+ },
+ "train_clips": [
+  "Fighting042_x264",
+  "Fighting049_x264",
+  "Assault049_x264",
+  "Assault050_x264",
+  "Assault051_x264",
+  "Normal_929_x264",
+  "busstop_calm_36467681",
+  "gf-punch-1"
+ ],
+ "test_only_clips": [
+  "sparring_6296158",
+  "sparring2_6296587",
+  "boxing_6296696",
+  "woman_sparring_6296385"
+ ],
+ "seconds": 640
+}

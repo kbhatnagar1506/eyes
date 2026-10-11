@@ -1,0 +1,23 @@
+# Never upload to Vercel (the site is public):
+# secrets
+.env
+.env.*
+!.env.example
+# real people's recordings (Live tab sessions, hand-labeled clips)
+sessions/
+# raw downloads and research outputs
+data/
+densepose-*/
+trained-models/
+scripts/
+# Vercel builds from source: never upload a local build (it holds every
+# demo clip, including research-licensed UCF-Crime footage)
+dist/
+# Demo clips are for the local Dataset tool only (UCF-Crime is research-licensed;
+# the rest is 50 MB the hosted demo doesn't use)
+public/demo-clips/
+# Map datasets load from the media bucket via public/media.json
+public/data/
+# the laptop-side services (hub, agents, tests) don't run on Vercel
+server/
+.claude/

@@ -17,16 +17,101 @@ export async function loadPoseLandmarker(): Promise<void> {
   landmarker = await PoseLandmarker.createFromOptions(vision, {
     baseOptions: {
       modelAssetPath:
-        "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+        // "full", not "lite": lite missed the person being hit in wide frames.
+        "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
       delegate: "GPU",
     },
-    runningMode: "VIDEO",
+    // IMAGE, not VIDEO: VIDEO mode skips the person detector while it is
+    // tracking someone, so with two people close together it locks onto one
+    // and flips between them. Measured on a real two-person punch recording:
+    // VIDEO saw both people in almost no frames; IMAGE saw both in most.
+    runningMode: "IMAGE",
     numPoses: 4,
+    // Defaults (0.5) drop the person being hit when two bodies overlap at impact.
+    minPoseDetectionConfidence: 0.3,
+    minPosePresenceConfidence: 0.3,
   });
 }
 
 export function isReady(): boolean {
   return landmarker !== null;
+}
+
+// When the full frame finds fewer people than it just saw, the missing one is
+// usually tangled up with the other at the moment of contact. Each half of the
+// frame on its own holds one body, which the detector finds reliably, so
+// detect on two overlapping crops and merge.
+const TILE_FRAC = 0.6; // each crop covers 60% of the width; middle 20% overlaps
+const RECENT_MS = 1000;
+// With one person in view there's nobody missing to look for, but still check
+// the halves now and then so a second person who walks in gets picked up.
+const DISCOVERY_EVERY_N_FRAMES = 10;
+const tileCanvas = document.createElement("canvas");
+let recentCounts: { t: number; n: number }[] = [];
+let frameIndex = 0;
+
+type Px = { x: number; y: number };
+
+function meanVisibility(lm: NormalizedLandmark[]) {
+  return lm.reduce((s, p) => s + (p.visibility ?? 0), 0) / lm.length;
+}
+
+// Upper-body center and size in pixels. Hips are often out of a webcam's
+// frame, so this leans on shoulders and the nose.
+function bodyAnchor(lm: NormalizedLandmark[], W: number, H: number): { c: Px; size: number } | null {
+  const vis = (i: number) => (lm[i].visibility ?? 0) > 0.3;
+  const px = (i: number): Px => ({ x: lm[i].x * W, y: lm[i].y * H });
+  const sh = [11, 12].filter(vis).map(px);
+  if (!sh.length) return null;
+  const c = { x: sh.reduce((s, p) => s + p.x, 0) / sh.length, y: sh.reduce((s, p) => s + p.y, 0) / sh.length };
+  const hips = [23, 24].filter(vis).map(px);
+  const torso = hips.length ? Math.hypot(hips[0].x - c.x, hips[0].y - c.y) : 0;
+  const shW = sh.length === 2 ? Math.hypot(sh[0].x - sh[1].x, sh[0].y - sh[1].y) : 0;
+  const neck = vis(0) ? 2 * Math.hypot(px(0).x - c.x, px(0).y - c.y) : 0;
+  return { c, size: Math.max(torso, shW, neck, 30) };
+}
+
+// Adds a detection unless it's a second copy of someone already in the list
+// (the detector sometimes returns one body several times); keeps the clearer copy.
+function mergeInto(merged: NormalizedLandmark[][], lm: NormalizedLandmark[], W: number, H: number) {
+  const a = bodyAnchor(lm, W, H);
+  if (!a) return;
+  const dupIdx = merged.findIndex((m) => {
+    const b = bodyAnchor(m, W, H);
+    return !!b && Math.hypot(a.c.x - b.c.x, a.c.y - b.c.y) < 0.5 * Math.max(a.size, b.size);
+  });
+  if (dupIdx < 0) merged.push(lm);
+  else if (meanVisibility(lm) > meanVisibility(merged[dupIdx])) merged[dupIdx] = lm;
+}
+
+function detectPeople(video: HTMLVideoElement, tMs: number): NormalizedLandmark[][] {
+  const W = video.videoWidth;
+  const H = video.videoHeight;
+  const merged: NormalizedLandmark[][] = [];
+  for (const lm of landmarker!.detect(video).landmarks) mergeInto(merged, lm, W, H);
+
+  recentCounts = recentCounts.filter((r) => tMs - r.t < RECENT_MS && r.t <= tMs);
+  const recentMax = Math.max(0, ...recentCounts.map((r) => r.n));
+  frameIndex++;
+  if (merged.length < recentMax || frameIndex % DISCOVERY_EVERY_N_FRAMES === 0) {
+    const cropW = Math.round(W * TILE_FRAC);
+    tileCanvas.width = cropW;
+    tileCanvas.height = H;
+    const tctx = tileCanvas.getContext("2d")!;
+    [0, W - cropW].forEach((x0, i) => {
+      tctx.drawImage(video, x0, 0, cropW, H, 0, 0, cropW, H);
+      const seamX = i === 0 ? x0 + cropW : x0; // the crop's inner edge, in pixels
+      for (const lm of landmarker!.detect(tileCanvas).landmarks) {
+        const fullLm = lm.map((p) => ({ ...p, x: (x0 + p.x * cropW) / W }));
+        const a = bodyAnchor(fullLm, W, H);
+        // A body centered near the crop's inner edge is probably cut in half by it.
+        if (!a || Math.abs(a.c.x - seamX) < 0.05 * W) continue;
+        mergeInto(merged, fullLm, W, H);
+      }
+    });
+  }
+  recentCounts.push({ t: tMs, n: merged.length });
+  return merged;
 }
 
 export interface PoseVectorRecord {
@@ -62,7 +147,9 @@ const L = {
 
 // Bone segments to render as thick colored capsules, approximating the
 // DensePose region palette: head = magenta, torso = blue/olive, arms =
-// blue->red, legs = teal->green.
+// blue->red. Legs (hip-knee, knee-ankle) are deliberately not rendered —
+// at normal webcam distance they're usually out of frame or low-confidence,
+// which made the leg segments jitter and draw to wrong/guessed positions.
 const BONES: Array<{ a: number; b: number; color: string; widthMul: number }> = [
   { a: L.leftShoulder, b: L.rightShoulder, color: "#2b4fe0", widthMul: 1.0 }, // shoulder line
   { a: L.leftHip, b: L.rightHip, color: "#8a7a24", widthMul: 1.0 }, // hip line
@@ -70,10 +157,6 @@ const BONES: Array<{ a: number; b: number; color: string; widthMul: number }> = 
   { a: L.leftElbow, b: L.leftWrist, color: "#d43b5e", widthMul: 0.65 },
   { a: L.rightShoulder, b: L.rightElbow, color: "#2b5ee0", widthMul: 0.85 },
   { a: L.rightElbow, b: L.rightWrist, color: "#d43b5e", widthMul: 0.65 },
-  { a: L.leftHip, b: L.leftKnee, color: "#1fb6a8", widthMul: 1.0 },
-  { a: L.leftKnee, b: L.leftAnkle, color: "#3fd17a", widthMul: 0.75 },
-  { a: L.rightHip, b: L.rightKnee, color: "#1fb6a8", widthMul: 1.0 },
-  { a: L.rightKnee, b: L.rightAnkle, color: "#3fd17a", widthMul: 0.75 },
 ];
 
 function mid(a: NormalizedLandmark, b: NormalizedLandmark) {
@@ -110,6 +193,7 @@ function landmarkMotion(personIdx: number, landmarks: NormalizedLandmark[]): num
 export function renderFrame(
   video: HTMLVideoElement,
   canvas: HTMLCanvasElement,
+  timestampMs?: number,
 ): { people: PersonMetrics[]; tMs: number; landmarksByPerson: NormalizedLandmark[][] } | null {
   if (!landmarker) return null;
   if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
@@ -119,15 +203,15 @@ export function renderFrame(
   const ctx = canvas.getContext("2d")!;
   const W = canvas.width;
   const H = canvas.height;
-  const tMs = performance.now();
-  const result = landmarker.detectForVideo(video, tMs);
+  const tMs = timestampMs ?? performance.now();
+  const allLandmarks = detectPeople(video, tMs);
 
   ctx.clearRect(0, 0, W, H);
 
   const people: PersonMetrics[] = [];
   const seenPersons = new Set<number>();
 
-  result.landmarks.forEach((landmarks, personIdx) => {
+  allLandmarks.forEach((landmarks, personIdx) => {
     seenPersons.add(personIdx);
     const px = (p: NormalizedLandmark) => ({ x: p.x * W, y: p.y * H });
 
@@ -245,7 +329,7 @@ export function renderFrame(
   ctx.fillText("CAM 03", W - 10, H - 14);
   ctx.restore();
 
-  return { people, tMs, landmarksByPerson: result.landmarks };
+  return { people, tMs, landmarksByPerson: allLandmarks };
 }
 
 function drawLabelStack(
